@@ -5,15 +5,29 @@
 		<title>CIS452 Project 3</title>
 		<script src="main.js"></script>
 		<meta charset="utf-8" />
+		<link rel="stylesheet" href="main.css">
 	</head>
 
 	<body onload="loader();">
-		<button onclick="simStep();">Step</button>
-		<div id="stats">
-			<div id="total"></div>
-			<div id="hits"></div>
-			<div id="replacements"></div>
+		<div id="col1">
+			<button onclick="simStep();">Step</button>
+			<div id="stats">
+				<div id="total"></div>
+				<div id="hits"></div>
+				<div id="faults"></div>
+			</div>
 		</div>
+		<table id="pageStatsTable">
+			<thead>
+				<tr>
+					<th>Process</th>
+					<th>Accesses</th>
+					<th>Faults</th>
+					<th>Total Pages</th>
+				</tr>
+			</thead>
+			<tbody id="pageStatsDisplay"></tbody>
+		</table>
 		<div id="memDisplay"></div>
 	</body>
 

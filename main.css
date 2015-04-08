@@ -1,0 +1,8 @@
+#col1, #pageStatsTable, #memDisplay {
+	float: left;
+	padding: 30px;
+}
+
+#pageStatsTable {
+	text-align: center;
+}

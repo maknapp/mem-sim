@@ -6,12 +6,14 @@ var logicalAddressSpace = 64, //KB
 	mem = [],
 	stats = {
 		total: 0,
-		replaced: 0,
+		faults: 0,
 	},
+	pageStats = {},
 	total,
 	hits,
-	replacements,
-	memDisplay;
+	faults,
+	memDisplay,
+	pageStatsDisplay;
 
 function loader() {
 
@@ -20,8 +22,9 @@ function loader() {
 	
 	total = document.getElementById("total");
 	hits = document.getElementById("hits");
-	replacements = document.getElementById("replacements");
+	faults = document.getElementById("faults");
 	memDisplay = document.getElementById("memDisplay");
+	pageStatsDisplay = document.getElementById("pageStatsDisplay");
 
 	for (i = 0; i < input.length; i++) {
 		var parts = input[i].split(":");
@@ -42,13 +45,14 @@ function loader() {
 function updatePage() {
 
 	total.innerHTML = "Total: " + stats.total;
-	hits.innerHTML = "Hits: " + (stats.total - stats.replaced) || 0;
-	replacements.innerHTML = "Replacements: " + stats.replaced;
+	hits.innerHTML = "Hits: " + (stats.total - stats.faults) || 0;
+	faults.innerHTML = "Faults: " + stats.faults;
 
-	var frag = document.createDocumentFragment();
+	var frag = document.createDocumentFragment(),
+		i, div;
 
-	for (var i = 0; i < numFrames; i++) {
-		var div = document.createElement("div");
+	for (i = 0; i < numFrames; i++) {
+		div = document.createElement("div");
 
 		if (typeof mem[i] !== "undefined") {
 			div.innerHTML = mem[i].ref.pid + " - " + mem[i].ref.page;
@@ -61,6 +65,33 @@ function updatePage() {
 
 	memDisplay.innerHTML = "";
 	memDisplay.appendChild(frag);
+
+
+	frag = document.createDocumentFragment();
+
+	for (var s in pageStats) {
+		if (pageStats.hasOwnProperty(s)) {
+
+			var tr = document.createElement("tr"),
+				inTable = [
+					s,
+					pageStats[s].total,
+					pageStats[s].faults,
+					pageStats[s].pages.length
+				];
+
+			for (i = 0; i < inTable.length; i++) {
+				var td = document.createElement("td");
+				td.innerHTML = inTable[i];
+				tr.appendChild(td);
+			}
+
+			frag.appendChild(tr);
+		}
+	}
+
+	pageStatsDisplay.innerHTML = "";
+	pageStatsDisplay.appendChild(frag);
 }
 
 function getNextVictimIndex() {
@@ -89,14 +120,24 @@ function getNextVictimIndex() {
 
 function doNextPageRef() {
 
-	if (pageReferences.length === 0) {
-		console.log("Done.");
-		return;
-	}
-
 	var ref = pageReferences.shift();
 
 	stats.total++;
+
+	var pageStat = pageStats[ref.pid];
+
+	if (typeof pageStat !== "undefined") {
+		pageStat.total++;
+
+		addUnique(pageStat.pages, ref.page);
+	}
+	else {
+		pageStat = pageStats[ref.pid] = {
+			total: 1,
+			faults: 0,
+			pages: [ref.page]
+		};
+	}
 
 	//Check if page is in memory
 	for (var i = 0; i < mem.length; i++) {
@@ -111,16 +152,30 @@ function doNextPageRef() {
 	//Not in mem so find victim or empty spot
 	var victim = getNextVictimIndex();
 
-	if (typeof mem[victim] !== "undefined") {
-		console.log("replaced " + victim);
-		stats.replaced++;
-	}
+	stats.faults++;
+	pageStat.faults++;
 
 	mem[victim] = {ref: ref, time: Date.now()};
 }
 
 function simStep() {
 
+	if (pageReferences.length === 0) {
+		console.log("Done.");
+		return;
+	}
+
 	doNextPageRef();
 	updatePage();
+}
+
+
+//Add number to array if its not there already
+function addUnique(arr, num) {
+	for (var i = 0; i < arr.length; i++) {
+		if (arr[i] === num) {
+			return;
+		}
+	}
+	arr.push(num);
 }
