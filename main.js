@@ -7,12 +7,18 @@ var logicalAddressSpace = 64, //KB
 		total: 0,
 		faults: 0,
 	},
+	lastReferencedPage,
+	lastVictimPage,
 	pageTables = {},
 	total,
 	hits,
 	faults,
 	memDisplay,
-	pageStatsDisplay;
+	pageStatsDisplay,
+	intRef = 0,
+	playbtn,
+	stepbtn,
+	nextfaultbtn;
 
 
 function loader() {
@@ -25,6 +31,10 @@ function loader() {
 	faults = document.getElementById("faults");
 	memDisplay = document.getElementById("memDisplay");
 	pageStatsDisplay = document.getElementById("pageStatsDisplay");
+
+	playbtn = document.getElementById("playbtn");
+	stepbtn = document.getElementById("stepbtn");
+	nextfaultbtn = document.getElementById("nextfaultbtn");
 
 	for (i = 0; i < input.length; i++) {
 		var parts = input[i].split(":");
@@ -58,7 +68,8 @@ function updatePage() {
 	pageStatsDisplay.innerHTML = "";
 	for (var s in pageTables) {
 		if (pageTables.hasOwnProperty(s)) {
-			pageTables[s].PrintPageTable();
+			frag = pageTables[s].PrintPageTable();
+			pageStatsDisplay.appendChild(frag);
 		}
 	}
 
@@ -67,32 +78,82 @@ function updatePage() {
 
 function doNextPageRef() {
 
-	var ref = pageReferences.shift();
+	currentRef = pageReferences.shift();
 
 	stats.total++;
 
-	var pageTable = pageTables[ref.pid];
+	var pageTable = pageTables[currentRef.pid];
 
 	//If page table does not exist, create one
 	if (typeof pageTable === "undefined") {
-		pageTable = pageTables[ref.pid] = new PageTable();
+		pageTable = pageTables[currentRef.pid] = new PageTable(currentRef.pid);
 	}
 
 	//Add page to page table if its not there
-	pageTable.Add(ref.page);
+	pageTable.Add(currentRef.page);
 
-	pageFrameTable.AccessPage(pageTable, ref);
+	pageFrameTable.AccessPage(pageTable, currentRef);
 }
 
-function simStep() {
+function simStep(noUpdate) {
 
 	if (pageReferences.length === 0) {
-		console.log("Done.");
+		simStop();
+		playbtn.disabled = true;
+		stepbtn.disabled = true;
+		nextfaultbtn.disabled = true;
 		return;
 	}
 
 	doNextPageRef();
+
+	if (typeof noUpdate === "undefined" || !noUpdate) {
+		updatePage();
+	}
+}
+
+function simPlay() {
+
+	playbtn.onclick = simStop;
+	playbtn.innerHTML = "Stop";
+	stepbtn.disabled = true;
+	nextfaultbtn.disabled = true;
+
+	clearInterval(intRef);
+	intRef = setInterval(function() {
+		simStep();
+	}, 50);
+}
+
+function simStop() {
+
+	clearInterval(intRef);
+	playbtn.onclick = simPlay;
+	playbtn.innerHTML = "Play";
+	stepbtn.disabled = false;
+	nextfaultbtn.disabled = false;
+}
+
+function simRunToNextFault() {
+
+	playbtn.disabled = true;
+	stepbtn.disabled = true;
+	nextfaultbtn.disabled = true;
+	
+	var currentFaultCount = stats.faults;
+
+	while (stats.faults <= currentFaultCount && pageReferences.length > 0) {
+		simStep(true);
+	}
+
 	updatePage();
+
+	if (pageReferences.length > 0) {
+		playbtn.disabled = false;
+		stepbtn.disabled = false;
+		nextfaultbtn.disabled = false;
+	}
+
 }
 
 
@@ -107,6 +168,13 @@ function PageFrameTable(memorySize, frameSize) {
 	this.frameSize = frameSize;
 
 	this.numFrames = this.memorySize / this.frameSize;
+
+	this.padding = "0";
+	this.padlength = (this.numFrames+"").length;
+
+	for (var i = 1; i < this.padlength; i++) {
+		this.padding += this.padding[0];
+	}
 
 	//Frame: ref, time
 	this.frames = [];
@@ -130,13 +198,15 @@ PageFrameTable.prototype.AccessPage = function(pageTable, ref) {
 
 	if (typeof this.frames[victim] !== "undefined") {
 		var victimTable = pageTables[this.frames[victim].ref.pid];
-		victimTable.pages[this.frames[victim].ref.page].frame = -1;
+		lastVictimPage = victimTable.pages[this.frames[victim].ref.page];
+		lastVictimPage.frame = -1;
 	}
 
 	stats.faults++;
 	pageTable.faults++;
 
-	pageTable.pages[ref.page].frame = victim;
+	lastReferencedPage = pageTable.pages[ref.page];
+	lastReferencedPage.frame = victim;
 
 	this.frames[victim] = {ref: ref, time: Date.now()};
 
@@ -171,12 +241,12 @@ PageFrameTable.prototype.PrintFrames = function() {
 	for (i = 0; i < this.numFrames; i++) {
 		div = document.createElement("div");
 
+		div.innerHTML = "[" + (this.padding + i).slice(this.padlength * -1) + "] ";
+
 		if (typeof this.frames[i] !== "undefined") {
-			div.innerHTML = this.frames[i].ref.pid + " - " + this.frames[i].ref.page;
+			div.innerHTML += this.frames[i].ref.pid + " - " + this.frames[i].ref.page;
 		}
-		else {
-			div.innerHTML = "--";
-		}
+
 		frag.appendChild(div);
 	}
 
@@ -187,11 +257,12 @@ PageFrameTable.prototype.PrintFrames = function() {
 
 
 
-function PageTable() {
+function PageTable(pid) {
 
 	//Pages: page, frame
 	this.pages = [];
 	this.faults = 0;
+	this.pid = pid;
 }
 
 PageTable.prototype.Add = function(page) {
@@ -211,13 +282,26 @@ PageTable.prototype.PrintPageTable = function() {
 	table.className = "pageTable";
 
 	for (var i = 0; i < this.pages.length; i++) {
-		var div = document.createElement("div");
+		var div = document.createElement("div"),
+			frame = this.pages[i].frame;
 
-		div.innerHTML = "Page " + this.pages[i].page + " Frame " + this.pages[i].frame;
+		if (this.pages[i] === lastReferencedPage) {
+			div.className = "lastReferenced";
+		}
+		else if (this.pages[i] === lastVictimPage) {
+			div.className = "lastVictim";
+		}
+
+		div.innerHTML = "Page " + this.pages[i].page;
+
+		if (frame !== -1) {
+			div.innerHTML += " Frame " + this.pages[i].frame;
+		}
+
 		table.appendChild(div);
 	}
 
 	frag.appendChild(table);
 
-	pageStatsDisplay.appendChild(frag);
+	return frag;
 };

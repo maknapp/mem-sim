@@ -12,3 +12,11 @@
 	padding: 10px;
 	margin: 10px;
 }
+
+.lastReferenced {
+	color: #0F0;
+}
+
+.lastVictim {
+	color: #F00;1
+}

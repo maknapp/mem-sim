@@ -10,7 +10,9 @@
 
 	<body onload="loader();">
 		<div id="col1">
-			<button onclick="simStep();">Step</button>
+			<button id="playbtn" onclick="simPlay();">Play</button>
+			<button id="nextfaultbtn" onclick="simRunToNextFault();">Play to Next Fault</button>
+			<button id="stepbtn" onclick="simStep();">Step</button>
 			<div id="stats">
 				<div id="total"></div>
 				<div id="hits"></div>
