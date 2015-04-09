@@ -1,8 +1,14 @@
-#col1, #pageStatsTable, #memDisplay {
+#col1, #pageStatsDisplay, #memDisplay {
 	float: left;
 	padding: 30px;
 }
 
 #pageStatsTable {
 	text-align: center;
+}
+
+.pageTable {
+	border: 1px solid black;
+	padding: 10px;
+	margin: 10px;
 }

@@ -1,19 +1,19 @@
 var logicalAddressSpace = 64, //KB
 	physicalMemory = 16, //KB
 	frameSize = 1, //KB
-	numFrames = physicalMemory / frameSize,
 	pageReferences = [],
-	mem = [],
+	pageFrameTable = new PageFrameTable(physicalMemory, frameSize),
 	stats = {
 		total: 0,
 		faults: 0,
 	},
-	pageStats = {},
+	pageTables = {},
 	total,
 	hits,
 	faults,
 	memDisplay,
 	pageStatsDisplay;
+
 
 function loader() {
 
@@ -48,73 +48,20 @@ function updatePage() {
 	hits.innerHTML = "Hits: " + (stats.total - stats.faults) || 0;
 	faults.innerHTML = "Faults: " + stats.faults;
 
-	var frag = document.createDocumentFragment(),
-		i, div;
-
-	for (i = 0; i < numFrames; i++) {
-		div = document.createElement("div");
-
-		if (typeof mem[i] !== "undefined") {
-			div.innerHTML = mem[i].ref.pid + " - " + mem[i].ref.page;
-		}
-		else {
-			div.innerHTML = "--";
-		}
-		frag.appendChild(div);
-	}
+	var frag = pageFrameTable.PrintFrames();
 
 	memDisplay.innerHTML = "";
 	memDisplay.appendChild(frag);
 
 
-	frag = document.createDocumentFragment();
-
-	for (var s in pageStats) {
-		if (pageStats.hasOwnProperty(s)) {
-
-			var tr = document.createElement("tr"),
-				inTable = [
-					s,
-					pageStats[s].total,
-					pageStats[s].faults,
-					pageStats[s].pages.length
-				];
-
-			for (i = 0; i < inTable.length; i++) {
-				var td = document.createElement("td");
-				td.innerHTML = inTable[i];
-				tr.appendChild(td);
-			}
-
-			frag.appendChild(tr);
-		}
-	}
 
 	pageStatsDisplay.innerHTML = "";
-	pageStatsDisplay.appendChild(frag);
-}
-
-function getNextVictimIndex() {
-
-	if (mem.length === 0 || numFrames < 2) {
-		return 0;
-	}
-
-	var last = 0;
-
-	for (var i = 1; i < numFrames; i++) {
-
-		//If there is an empty frame return it
-		if (typeof mem[i] === "undefined") {
-			return i;
-		}
-
-		if (mem[i].time < mem[last].time) {
-			last = i;
+	for (var s in pageTables) {
+		if (pageTables.hasOwnProperty(s)) {
+			pageTables[s].PrintPageTable();
 		}
 	}
 
-	return last;
 }
 
 
@@ -124,38 +71,17 @@ function doNextPageRef() {
 
 	stats.total++;
 
-	var pageStat = pageStats[ref.pid];
+	var pageTable = pageTables[ref.pid];
 
-	if (typeof pageStat !== "undefined") {
-		pageStat.total++;
-
-		addUnique(pageStat.pages, ref.page);
-	}
-	else {
-		pageStat = pageStats[ref.pid] = {
-			total: 1,
-			faults: 0,
-			pages: [ref.page]
-		};
+	//If page table does not exist, create one
+	if (typeof pageTable === "undefined") {
+		pageTable = pageTables[ref.pid] = new PageTable();
 	}
 
-	//Check if page is in memory
-	for (var i = 0; i < mem.length; i++) {
-		var memRef = mem[i].ref;
-		if (memRef.pid === ref.pid && memRef.page === ref.page) {
-			console.log("Page in mem already.");
-			mem[i].time = Date.now();
-			return;
-		}
-	}
+	//Add page to page table if its not there
+	pageTable.Add(ref.page);
 
-	//Not in mem so find victim or empty spot
-	var victim = getNextVictimIndex();
-
-	stats.faults++;
-	pageStat.faults++;
-
-	mem[victim] = {ref: ref, time: Date.now()};
+	pageFrameTable.AccessPage(pageTable, ref);
 }
 
 function simStep() {
@@ -170,12 +96,128 @@ function simStep() {
 }
 
 
-//Add number to array if its not there already
-function addUnique(arr, num) {
-	for (var i = 0; i < arr.length; i++) {
-		if (arr[i] === num) {
+
+//Ref: pid, page
+//Frame: ref, time
+//PageTable: 
+
+
+function PageFrameTable(memorySize, frameSize) {
+	this.memorySize = memorySize;
+	this.frameSize = frameSize;
+
+	this.numFrames = this.memorySize / this.frameSize;
+
+	//Frame: ref, time
+	this.frames = [];
+}
+
+PageFrameTable.prototype.AccessPage = function(pageTable, ref) {
+	
+	//Check if page is in memory
+	for (var i = 0; i < this.frames.length; i++) {
+		var memRef = this.frames[i].ref;
+		if (memRef.pid === ref.pid && memRef.page === ref.page) {
+
+			//Update access time
+			this.frames[i].time = Date.now();
 			return;
 		}
 	}
-	arr.push(num);
+
+	//Not in mem so find victim or empty spot
+	var victim = this.getNextVictim();
+
+	if (typeof this.frames[victim] !== "undefined") {
+		var victimTable = pageTables[this.frames[victim].ref.pid];
+		victimTable.pages[this.frames[victim].ref.page].frame = -1;
+	}
+
+	stats.faults++;
+	pageTable.faults++;
+
+	pageTable.pages[ref.page].frame = victim;
+
+	this.frames[victim] = {ref: ref, time: Date.now()};
+
+};
+
+PageFrameTable.prototype.getNextVictim = function() {
+	if (this.frames.length === 0 || this.numFrames < 2) {
+		return 0;
+	}
+
+	var last = 0;
+
+	for (var i = 1; i < this.numFrames; i++) {
+
+		//If there is an empty frame return it
+		if (typeof this.frames[i] === "undefined") {
+			return i;
+		}
+
+		if (this.frames[i].time < this.frames[last].time) {
+			last = i;
+		}
+	}
+
+	return last;
+};
+
+PageFrameTable.prototype.PrintFrames = function() {
+	var frag = document.createDocumentFragment(),
+		i, div;
+
+	for (i = 0; i < this.numFrames; i++) {
+		div = document.createElement("div");
+
+		if (typeof this.frames[i] !== "undefined") {
+			div.innerHTML = this.frames[i].ref.pid + " - " + this.frames[i].ref.page;
+		}
+		else {
+			div.innerHTML = "--";
+		}
+		frag.appendChild(div);
+	}
+
+	return frag;
+};
+
+
+
+
+
+function PageTable() {
+
+	//Pages: page, frame
+	this.pages = [];
+	this.faults = 0;
 }
+
+PageTable.prototype.Add = function(page) {
+	for (var i = 0; i < this.pages.length; i++) {
+		if (this.pages[i].page === page) {
+			return this.pages[i];
+		}
+	}
+	this.pages.push({page: page, frame: -1});
+};
+
+PageTable.prototype.PrintPageTable = function() {
+	
+	var frag = document.createDocumentFragment();
+
+	var table = document.createElement("div");
+	table.className = "pageTable";
+
+	for (var i = 0; i < this.pages.length; i++) {
+		var div = document.createElement("div");
+
+		div.innerHTML = "Page " + this.pages[i].page + " Frame " + this.pages[i].frame;
+		table.appendChild(div);
+	}
+
+	frag.appendChild(table);
+
+	pageStatsDisplay.appendChild(frag);
+};
