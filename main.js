@@ -1,4 +1,5 @@
-var logicalAddressSpace = 64, //KB
+var clock = 0,
+	logicalAddressSpace = 64, //KB
 	physicalMemory = 16, //KB
 	frameSize = 1, //KB
 	pageReferences = [],
@@ -202,7 +203,7 @@ PageFrameTable.prototype.AccessPage = function(pageTable, ref) {
 		if (memRef.pid === ref.pid && memRef.page === ref.page) {
 
 			//Update access time
-			this.frames[i].time = Date.now();
+			this.frames[i].time = clock++;
 			return false;
 		}
 	}
@@ -225,7 +226,7 @@ PageFrameTable.prototype.AccessPage = function(pageTable, ref) {
 	lastReferencedPage.frame = victim;
 
 	//Put the reference in the frame table with the current time
-	this.frames[victim] = {ref: ref, time: Date.now()};
+	this.frames[victim] = {ref: ref, time: clock++};
 
 	return true;
 };
