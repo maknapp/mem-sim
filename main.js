@@ -20,23 +20,22 @@ var logicalAddressSpace = 64, //KB
 	stepbtn,
 	nextfaultbtn;
 
-
+//Runs on page load to set up variables
 function loader() {
 
-	var input = document.getElementById("data").textContent.split("\n"),
-		i;
-	
 	total = document.getElementById("total");
 	hits = document.getElementById("hits");
 	faults = document.getElementById("faults");
 	memDisplay = document.getElementById("memDisplay");
 	pageStatsDisplay = document.getElementById("pageStatsDisplay");
-
 	playbtn = document.getElementById("playbtn");
 	stepbtn = document.getElementById("stepbtn");
 	nextfaultbtn = document.getElementById("nextfaultbtn");
 
-	for (i = 0; i < input.length; i++) {
+	//Load input and parse into structure
+	var input = document.getElementById("data").textContent.split("\n");
+	
+	for (var i = 0; i < input.length; i++) {
 		var parts = input[i].split(":");
 		if (parts.length !== 2) {
 			continue;
@@ -51,20 +50,21 @@ function loader() {
 	updatePage();
 }
 
-
+//Updates global stats and runs all print functions
 function updatePage() {
 
+	//Update global stats
 	total.innerHTML = "Total: " + stats.total;
 	hits.innerHTML = "Hits: " + (stats.total - stats.faults) || 0;
 	faults.innerHTML = "Faults: " + stats.faults;
 
+	//Update page frame table
 	var frag = pageFrameTable.PrintFrames();
-
 	memDisplay.innerHTML = "";
 	memDisplay.appendChild(frag);
 
 
-
+	//Update page tables of every process
 	pageStatsDisplay.innerHTML = "";
 	for (var s in pageTables) {
 		if (pageTables.hasOwnProperty(s)) {
@@ -75,7 +75,7 @@ function updatePage() {
 
 }
 
-
+//Processes next page reference from the input
 function doNextPageRef() {
 
 	currentRef = pageReferences.shift();
@@ -86,15 +86,22 @@ function doNextPageRef() {
 
 	//If page table does not exist, create one
 	if (typeof pageTable === "undefined") {
-		pageTable = pageTables[currentRef.pid] = new PageTable(currentRef.pid);
+		pageTable = pageTables[currentRef.pid] = new PageTable();
 	}
 
 	//Add page to page table if its not there
 	pageTable.Add(currentRef.page);
 
-	pageFrameTable.AccessPage(pageTable, currentRef);
+	//Tell frame table to access the referenced page
+	var isFault = pageFrameTable.AccessPage(pageTable, currentRef);
+
+	if (isFault) {
+		stats.faults++;
+	}
 }
 
+//Runs through the next reference and updates the display
+//noUpdate is optional - if true it will not update the display
 function simStep(noUpdate) {
 
 	if (pageReferences.length === 0) {
@@ -112,6 +119,7 @@ function simStep(noUpdate) {
 	}
 }
 
+//Runs through entire simulatation (unless stopped)
 function simPlay() {
 
 	playbtn.onclick = simStop;
@@ -125,6 +133,7 @@ function simPlay() {
 	}, 50);
 }
 
+//Stops a running simulation
 function simStop() {
 
 	clearInterval(intRef);
@@ -134,6 +143,7 @@ function simStop() {
 	nextfaultbtn.disabled = false;
 }
 
+//Runs through simulation until a fault is reached or simulation is over
 function simRunToNextFault() {
 
 	playbtn.disabled = true;
@@ -162,7 +172,7 @@ function simRunToNextFault() {
 //Frame: ref, time
 //PageTable: 
 
-
+//Object to handle the page frame table
 function PageFrameTable(memorySize, frameSize) {
 	this.memorySize = memorySize;
 	this.frameSize = frameSize;
@@ -180,38 +190,47 @@ function PageFrameTable(memorySize, frameSize) {
 	this.frames = [];
 }
 
+//Simulates a page access - returns true if there is a page fault
 PageFrameTable.prototype.AccessPage = function(pageTable, ref) {
+
+	//Set last referenced page
+	lastReferencedPage = pageTable.pages[ref.page];
 	
-	//Check if page is in memory
+	//Check if page is in the page frame table
 	for (var i = 0; i < this.frames.length; i++) {
 		var memRef = this.frames[i].ref;
 		if (memRef.pid === ref.pid && memRef.page === ref.page) {
 
 			//Update access time
 			this.frames[i].time = Date.now();
-			return;
+			return false;
 		}
 	}
 
 	//Not in mem so find victim or empty spot
 	var victim = this.getNextVictim();
 
+	//If there is a victim, tell the victim page it is not in a frame
+	// and set it as last victim
 	if (typeof this.frames[victim] !== "undefined") {
-		var victimTable = pageTables[this.frames[victim].ref.pid];
-		lastVictimPage = victimTable.pages[this.frames[victim].ref.page];
+		var victimRef = this.frames[victim].ref,
+			victimTable = pageTables[victimRef.pid];
+		lastVictimPage = victimTable.pages[victimRef.page];
 		lastVictimPage.frame = -1;
 	}
 
-	stats.faults++;
 	pageTable.faults++;
 
-	lastReferencedPage = pageTable.pages[ref.page];
+	//Tell the referenced page which frame it is in now
 	lastReferencedPage.frame = victim;
 
+	//Put the reference in the frame table with the current time
 	this.frames[victim] = {ref: ref, time: Date.now()};
 
+	return true;
 };
 
+//Returns the index to the next vicitim or empty space in the frame table
 PageFrameTable.prototype.getNextVictim = function() {
 	if (this.frames.length === 0 || this.numFrames < 2) {
 		return 0;
@@ -234,12 +253,12 @@ PageFrameTable.prototype.getNextVictim = function() {
 	return last;
 };
 
+//Returns a document fragment with the current frame table info
 PageFrameTable.prototype.PrintFrames = function() {
-	var frag = document.createDocumentFragment(),
-		i, div;
+	var frag = document.createDocumentFragment();
 
-	for (i = 0; i < this.numFrames; i++) {
-		div = document.createElement("div");
+	for (var i = 0; i < this.numFrames; i++) {
+		var div = document.createElement("div");
 
 		div.innerHTML = "[" + (this.padding + i).slice(this.padlength * -1) + "] ";
 
@@ -253,32 +272,30 @@ PageFrameTable.prototype.PrintFrames = function() {
 	return frag;
 };
 
-
-
-
-
+//Object to handle page tables
 function PageTable(pid) {
 
 	//Pages: page, frame
 	this.pages = [];
 	this.faults = 0;
-	this.pid = pid;
 }
 
+//Adds page to the table if it is not there already
 PageTable.prototype.Add = function(page) {
 	for (var i = 0; i < this.pages.length; i++) {
 		if (this.pages[i].page === page) {
-			return this.pages[i];
+			return;
 		}
 	}
 	this.pages.push({page: page, frame: -1});
 };
 
+//Returns a document fragment with the current page table info
 PageTable.prototype.PrintPageTable = function() {
 	
-	var frag = document.createDocumentFragment();
+	var frag = document.createDocumentFragment(),
+		table = document.createElement("div");
 
-	var table = document.createElement("div");
 	table.className = "pageTable";
 
 	for (var i = 0; i < this.pages.length; i++) {
