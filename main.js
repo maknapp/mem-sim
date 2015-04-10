@@ -200,13 +200,13 @@ PageFrameTable.prototype.AccessPage = function(pageTable, ref) {
 	//Set last referenced page
 	lastReferencedPage = pageTable.pages[ref.page];
 	
-	//Check if page is in the page frame table
+	//If the page is in the page frame table just update the time
 	if (typeof lastReferencedPage.frame !== "undefined" && lastReferencedPage.frame >= 0) {
 		lastReferencedPage.time = clock++;
 		return;
 	}
 
-	//Not in mem so find victim or empty spot
+	//Not in page table so find victim or empty spot
 	var victim = this.getNextVictim();
 
 	//If there is a victim, tell the victim page it is not in a frame
@@ -327,7 +327,7 @@ PageTable.prototype.PrintPageTable = function() {
 
 	var div = document.createElement("div");
 	div.className = "pageTableFault";
-	div.innerHTML = "Size: " + this.pages.length + " pages <br />Faults: " + this.faults + "<br /> References: " + this.references;
+	div.innerHTML = "Size: " + this.pages.length + "<br />Faults: " + this.faults + "<br /> References: " + this.references;
 	table.appendChild(div);
 
 	frag.appendChild(table);
