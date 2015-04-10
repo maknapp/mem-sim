@@ -1,5 +1,4 @@
-var clock = 0,
-	logicalAddressSpace = 64, //KB
+var logicalAddressSpace = 64, //KB
 	physicalMemory = 16, //KB
 	frameSize = 1, //KB
 	pageReferences = [],
@@ -15,7 +14,7 @@ var clock = 0,
 	hits,
 	faults,
 	memDisplay,
-	pageStatsDisplay,
+	pageTableDisplay,
 	intRef = 0,
 	playbtn,
 	stepbtn,
@@ -27,7 +26,7 @@ function loader() {
 	hits = document.getElementById("hits");
 	faults = document.getElementById("faults");
 	memDisplay = document.getElementById("memDisplay");
-	pageStatsDisplay = document.getElementById("pageStatsDisplay");
+	pageTableDisplay = document.getElementById("pageTableDisplay");
 	playbtn = document.getElementById("playbtn");
 	stepbtn = document.getElementById("stepbtn");
 	nextfaultbtn = document.getElementById("nextfaultbtn");
@@ -64,11 +63,11 @@ function updatePage() {
 	memDisplay.appendChild(frag);
 
 	//Update page tables of every process
-	pageStatsDisplay.innerHTML = "";
+	pageTableDisplay.innerHTML = "";
 	for (var s in pageTables) {
 		if (pageTables.hasOwnProperty(s)) {
 			frag = pageTables[s].PrintPageTable();
-			pageStatsDisplay.appendChild(frag);
+			pageTableDisplay.appendChild(frag);
 		}
 	}
 }
@@ -90,7 +89,7 @@ function doNextPageRef() {
 	pageTable.Add(currentRef.page);
 
 	//Tell frame table to access the referenced page
-	var isFault = pageFrameTable.AccessPage(pageTable, currentRef);
+	var isFault = pageFrameTable.AccessPage(pageTable, currentRef.page);
 
 	if (isFault) {
 		stats.faults++;
@@ -175,20 +174,22 @@ function PageFrameTable(memorySize, frameSize) {
 	}
 
 	this.frames = [];
+
+	this.clock = 0;
 }
 
 //Simulates a page access - returns true if there is a page fault
-PageFrameTable.prototype.AccessPage = function(pageTable, ref) {
+PageFrameTable.prototype.AccessPage = function(pageTable, pageNum) {
 
 	//Update page table access stat
 	pageTable.references++;
 
 	//Set last referenced page
-	lastReferencedPage = pageTable.pages[ref.page];
+	lastReferencedPage = pageTable.pages[pageNum];
 	
 	//If the page is in the page frame table just update the time
 	if (typeof lastReferencedPage.frame !== "undefined" && lastReferencedPage.frame >= 0) {
-		this.frames[lastReferencedPage.frame].time = clock++;
+		this.frames[lastReferencedPage.frame].time = this.clock++;
 		return;
 	}
 
@@ -209,7 +210,7 @@ PageFrameTable.prototype.AccessPage = function(pageTable, ref) {
 	lastReferencedPage.frame = victim;
 
 	//Put the reference in the frame table with the current time
-	this.frames[victim] = {page: lastReferencedPage, time: clock++};
+	this.frames[victim] = {page: lastReferencedPage, time: this.clock++};
 
 	return true;
 };
@@ -310,7 +311,7 @@ PageTable.prototype.PrintPageTable = function() {
 	}
 
 	div = document.createElement("div");
-	div.className = "pageTableFault";
+	div.className = "pageTableStats";
 	div.innerHTML = "Size: " + this.pages.length + "<br />Faults: " + this.faults + "<br /> References: " + this.references;
 	table.appendChild(div);
 
