@@ -169,10 +169,6 @@ function simRunToNextFault() {
 
 
 
-//Ref: pid, page
-//Frame: ref, time
-//PageTable: 
-
 //Object to handle the page frame table
 function PageFrameTable(memorySize, frameSize) {
 	this.memorySize = memorySize;
@@ -187,7 +183,6 @@ function PageFrameTable(memorySize, frameSize) {
 		this.padding += this.padding[0];
 	}
 
-	//Frame: page
 	this.frames = [];
 }
 
@@ -202,7 +197,7 @@ PageFrameTable.prototype.AccessPage = function(pageTable, ref) {
 	
 	//If the page is in the page frame table just update the time
 	if (typeof lastReferencedPage.frame !== "undefined" && lastReferencedPage.frame >= 0) {
-		lastReferencedPage.time = clock++;
+		this.frames[lastReferencedPage.frame].time = clock++;
 		return;
 	}
 
@@ -212,8 +207,8 @@ PageFrameTable.prototype.AccessPage = function(pageTable, ref) {
 	//If there is a victim, tell the victim page it is not in a frame
 	// and set it as last victim
 	if (typeof this.frames[victim] !== "undefined") {
-		var victimPage = this.frames[victim];
-		lastVictimPage = pageTables[victimPage.pid].pages[victimPage.page];
+		var victimPage = this.frames[victim].page;
+		lastVictimPage = pageTables[victimPage.pid].pages[victimPage.number];
 		lastVictimPage.frame = -1;
 	}
 
@@ -222,11 +217,8 @@ PageFrameTable.prototype.AccessPage = function(pageTable, ref) {
 	//Tell the referenced page which frame it is in now
 	lastReferencedPage.frame = victim;
 
-	//Update access time
-	lastReferencedPage.time = clock++;
-
 	//Put the reference in the frame table with the current time
-	this.frames[victim] = lastReferencedPage;
+	this.frames[victim] = {page: lastReferencedPage, time: clock++};
 
 	return true;
 };
@@ -264,7 +256,7 @@ PageFrameTable.prototype.PrintFrames = function() {
 		div.innerHTML = "[" + (this.padding + i).slice(this.padlength * -1) + "] ";
 
 		if (typeof this.frames[i] !== "undefined") {
-			div.innerHTML += this.frames[i].pid + " - " + this.frames[i].page;
+			div.innerHTML += this.frames[i].page.pid + " - " + this.frames[i].page.number;
 
 			if (i === lastReferencedPage.frame) {
 				div.className = "lastReferenced";
@@ -279,8 +271,6 @@ PageFrameTable.prototype.PrintFrames = function() {
 
 //Object to handle page tables
 function PageTable(pid) {
-
-	//Pages: page, frame
 	this.pages = [];
 	this.faults = 0;
 	this.references = 0;
@@ -288,13 +278,11 @@ function PageTable(pid) {
 }
 
 //Adds page to the table if it is not there already
-PageTable.prototype.Add = function(page) {
-	for (var i = 0; i < this.pages.length; i++) {
-		if (this.pages[i].page === page) {
-			return;
-		}
+PageTable.prototype.Add = function(pageNum) {
+	if (typeof this.pages[pageNum] !== "undefined") {
+		return;
 	}
-	this.pages.push({page: page, frame: -1, time: 0, pid: this.pid});
+	this.pages[pageNum] = {number: pageNum, frame: -1, pid: this.pid};
 };
 
 //Returns a document fragment with the current page table info
@@ -306,6 +294,11 @@ PageTable.prototype.PrintPageTable = function() {
 	table.className = "pageTable";
 
 	for (var i = 0; i < this.pages.length; i++) {
+
+		if (typeof this.pages[i] === "undefined") {
+			continue;
+		}
+
 		var div = document.createElement("div"),
 			frame = this.pages[i].frame;
 
@@ -316,7 +309,7 @@ PageTable.prototype.PrintPageTable = function() {
 			div.className = "lastVictim";
 		}
 
-		div.innerHTML = "Page " + this.pages[i].page;
+		div.innerHTML = "Page " + this.pages[i].number;
 
 		if (frame !== -1) {
 			div.innerHTML += " Frame " + this.pages[i].frame;
