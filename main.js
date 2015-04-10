@@ -23,7 +23,6 @@ var clock = 0,
 
 //Runs on page load to set up variables
 function loader() {
-
 	total = document.getElementById("total");
 	hits = document.getElementById("hits");
 	faults = document.getElementById("faults");
@@ -64,7 +63,6 @@ function updatePage() {
 	memDisplay.innerHTML = "";
 	memDisplay.appendChild(frag);
 
-
 	//Update page tables of every process
 	pageStatsDisplay.innerHTML = "";
 	for (var s in pageTables) {
@@ -73,12 +71,10 @@ function updatePage() {
 			pageStatsDisplay.appendChild(frag);
 		}
 	}
-
 }
 
 //Processes next page reference from the input
 function doNextPageRef() {
-
 	currentRef = pageReferences.shift();
 
 	stats.total++;
@@ -104,7 +100,6 @@ function doNextPageRef() {
 //Runs through the next reference and updates the display
 //noUpdate is optional - if true it will not update the display
 function simStep(noUpdate) {
-
 	if (pageReferences.length === 0) {
 		simStop();
 		playbtn.disabled = true;
@@ -122,7 +117,6 @@ function simStep(noUpdate) {
 
 //Runs through entire simulatation (unless stopped)
 function simPlay() {
-
 	playbtn.onclick = simStop;
 	playbtn.innerHTML = "Stop";
 	stepbtn.disabled = true;
@@ -136,7 +130,6 @@ function simPlay() {
 
 //Stops a running simulation
 function simStop() {
-
 	clearInterval(intRef);
 	playbtn.onclick = simPlay;
 	playbtn.innerHTML = "Play";
@@ -146,7 +139,6 @@ function simStop() {
 
 //Runs through simulation until a fault is reached or simulation is over
 function simRunToNextFault() {
-
 	playbtn.disabled = true;
 	stepbtn.disabled = true;
 	nextfaultbtn.disabled = true;
@@ -164,7 +156,6 @@ function simRunToNextFault() {
 		stepbtn.disabled = false;
 		nextfaultbtn.disabled = false;
 	}
-
 }
 
 
@@ -286,10 +277,10 @@ PageTable.prototype.Add = function(pageNum) {
 };
 
 //Returns a document fragment with the current page table info
-PageTable.prototype.PrintPageTable = function() {
-	
+PageTable.prototype.PrintPageTable = function() {	
 	var frag = document.createDocumentFragment(),
-		table = document.createElement("div");
+		table = document.createElement("div"),
+		div, frame;
 
 	table.className = "pageTable";
 
@@ -299,8 +290,8 @@ PageTable.prototype.PrintPageTable = function() {
 			continue;
 		}
 
-		var div = document.createElement("div"),
-			frame = this.pages[i].frame;
+		div = document.createElement("div");
+		frame = this.pages[i].frame;
 
 		if (this.pages[i] === lastReferencedPage) {
 			div.className = "lastReferenced";
@@ -318,7 +309,7 @@ PageTable.prototype.PrintPageTable = function() {
 		table.appendChild(div);
 	}
 
-	var div = document.createElement("div");
+	div = document.createElement("div");
 	div.className = "pageTableFault";
 	div.innerHTML = "Size: " + this.pages.length + "<br />Faults: " + this.faults + "<br /> References: " + this.references;
 	table.appendChild(div);
