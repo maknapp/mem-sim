@@ -8,6 +8,7 @@
 }
 
 .pageTable {
+	float: left;
 	border: 1px solid black;
 	padding: 10px;
 	margin: 10px;
@@ -18,5 +19,12 @@
 }
 
 .lastVictim {
-	color: #F00;1
+	color: #F00;
+}
+
+.pageTableFault {
+	border-top: 1px solid gray;
+	color: gray;
+	text-align: right;
+	padding-top: 5px;
 }
