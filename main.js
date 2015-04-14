@@ -168,12 +168,16 @@ function PageFrameTable(memorySize, frameSize) {
 
 	this.padding = "0";
 	this.padlength = (this.numFrames+"").length;
-
 	for (var i = 1; i < this.padlength; i++) {
 		this.padding += this.padding[0];
 	}
 
 	this.frames = [];
+
+	this.freeFrames = [];
+	for (var i = 0; i < this.numFrames; i++) {
+		this.freeFrames.push(i);
+	}
 
 	this.clock = 0;
 }
@@ -194,7 +198,7 @@ PageFrameTable.prototype.AccessPage = function(pageTable, pageNum) {
 	}
 
 	//Not in page table so find victim or empty spot
-	var victim = this.getNextVictim();
+	var victim = this.freeFrames.shift() || this.getNextVictim();
 
 	//If there is a victim, tell the victim page it is not in a frame
 	// and set it as last victim
