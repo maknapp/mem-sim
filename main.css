@@ -9,22 +9,53 @@
 
 .pageTable {
 	float: left;
-	border: 1px solid black;
 	padding: 10px;
 	margin: 10px;
 }
 
 .lastReferenced {
-	color: #0F0;
+	color: #000 !important;
+	background: #0F0 !important;
 }
 
 .lastVictim {
-	color: #F00;
+	background: #F00 !important;
+	color: #000 !important;
 }
 
 .pageTableStats {
-	border-top: 1px solid gray;
 	color: gray;
 	text-align: right;
 	padding-top: 5px;
+}
+
+.pageTitle {
+	padding: 5px;
+	text-align: center;
+	font-size: 150%;
+}
+
+.page {
+	background: #00F;
+	border-radius: 3px;
+	height: 45px;
+	line-height: 45px;
+	font-size: 150%;
+	color: #FFF;
+	text-align: center;
+	position: relative;
+	margin: 3px;
+	padding: 3px;
+}
+
+.frameLink {
+	position: absolute;
+	bottom: 0;
+	right: 2px;
+	font-size: 70%;
+	line-height: normal;
+}
+
+.frameLink:before {
+	content: "→ ";
 }

@@ -281,9 +281,14 @@ PageTable.prototype.Add = function(pageNum) {
 PageTable.prototype.PrintPageTable = function() {	
 	var frag = document.createDocumentFragment(),
 		table = document.createElement("div"),
+		title = document.createElement("div"),
 		div, frame;
 
 	table.className = "pageTable";
+
+	title.className = "pageTitle";
+	title.innerHTML = this.pid;
+	table.appendChild(title);
 
 	for (var i = 0; i < this.pages.length; i++) {
 
@@ -292,19 +297,23 @@ PageTable.prototype.PrintPageTable = function() {
 		}
 
 		div = document.createElement("div");
+		div.className = "page";
 		frame = this.pages[i].frame;
 
 		if (this.pages[i] === lastReferencedPage) {
-			div.className = "lastReferenced";
+			div.className += " lastReferenced";
 		}
 		else if (this.pages[i] === lastVictimPage) {
-			div.className = "lastVictim";
+			div.className += " lastVictim";
 		}
 
-		div.innerHTML = "Page " + this.pages[i].number;
+		div.innerHTML = this.pages[i].number;
 
 		if (frame !== -1) {
-			div.innerHTML += " Frame " + this.pages[i].frame;
+			var frameLink = document.createElement("span");
+			frameLink.className = "frameLink";
+			frameLink.innerHTML = this.pages[i].frame;
+			div.appendChild(frameLink);
 		}
 
 		table.appendChild(div);
