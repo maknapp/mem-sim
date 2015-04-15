@@ -1,6 +1,16 @@
+body {
+	font-family: 'Open Sans', sans-serif;
+}
+
 #col1, #pageTableDisplay, #memDisplay {
 	float: left;
-	padding: 30px;
+	padding: 0 30px;
+}
+
+#stats .stat {
+	font-size: 300%;
+	text-align: center;
+	margin: 50px 0;
 }
 
 #pageStatsTable {
@@ -58,4 +68,43 @@
 
 .frameLink:before {
 	content: "→ ";
+}
+
+
+
+
+
+.frame {
+	background: #DDD;
+	width: 150px;
+	height: 45px;
+	position: relative;
+	text-align: center;
+	border-radius: 3px;
+	margin: 2px 0;
+}
+
+.frameNum {
+	position: absolute;
+	line-height: 45px;
+	left: 4px;
+	padding-right: 4px;
+	border-right: 1px outset #FFF;
+	color: #333;
+}
+
+.framePid, .framePage {
+	line-height: 20px;
+	vertical-align: top;
+}
+
+.framePid:before, .framePage:before {
+	content: "Process";
+	font-size: 70%;
+	color: #333;
+	padding-right: 10px;
+}
+
+.framePage:before {
+	content: "Page";
 }

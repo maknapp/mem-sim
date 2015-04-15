@@ -3,9 +3,10 @@
 	
 	<head>
 		<title>CIS452 Project 3</title>
+		<link href='http://fonts.googleapis.com/css?family=Open+Sans:300' rel='stylesheet' type='text/css'>
+		<link rel="stylesheet" href="main.css">
 		<script src="main.js"></script>
 		<meta charset="utf-8" />
-		<link rel="stylesheet" href="main.css">
 	</head>
 
 	<body onload="loader();">
@@ -14,9 +15,20 @@
 			<button id="nextfaultbtn" onclick="simRunToNextFault();">Play to Next Fault</button>
 			<button id="stepbtn" onclick="simStep();">Step</button>
 			<div id="stats">
-				<div id="total"></div>
-				<div id="hits"></div>
-				<div id="faults"></div>
+				<div class="stat">
+					<div class="statName">Total</div>
+					<div class="statValue" id="total"></div>
+				</div>
+
+				<div class="stat">
+					<div class="statName">Hits</div>
+					<div class="statValue" id="hits"></div>
+				</div>
+
+				<div class="stat">
+					<div class="statName">Faults</div>
+					<div class="statValue" id="faults"></div>
+				</div>
 			</div>
 		</div>
 		<div id="memDisplay"></div>

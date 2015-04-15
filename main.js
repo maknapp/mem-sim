@@ -53,9 +53,9 @@ function loader() {
 function updatePage() {
 
 	//Update global stats
-	total.innerHTML = "Total: " + stats.total;
-	hits.innerHTML = "Hits: " + (stats.total - stats.faults) || 0;
-	faults.innerHTML = "Faults: " + stats.faults;
+	total.innerHTML = stats.total;
+	hits.innerHTML = (stats.total - stats.faults) || 0;
+	faults.innerHTML = stats.faults;
 
 	//Update page frame table
 	var frag = pageFrameTable.PrintFrames();
@@ -175,7 +175,7 @@ function PageFrameTable(memorySize, frameSize) {
 	this.frames = [];
 
 	this.freeFrames = [];
-	for (var i = 0; i < this.numFrames; i++) {
+	for (i = 0; i < this.numFrames; i++) {
 		this.freeFrames.push(i);
 	}
 
@@ -247,19 +247,38 @@ PageFrameTable.prototype.PrintFrames = function() {
 	var frag = document.createDocumentFragment();
 
 	for (var i = 0; i < this.numFrames; i++) {
-		var div = document.createElement("div");
+		var frame = document.createElement("div");
 
-		div.innerHTML = "[" + (this.padding + i).slice(this.padlength * -1) + "] ";
+		frame.className = "frame";
+
+		var frameNum = document.createElement("div");
+		frameNum.className = "frameNum";
+		frameNum.innerHTML = "" + (this.padding + i).slice(this.padlength * -1);
+		frame.appendChild(frameNum);
+
 
 		if (typeof this.frames[i] !== "undefined") {
-			div.innerHTML += this.frames[i].page.pid + " - " + this.frames[i].page.number;
+			var framePid = document.createElement("span"),
+				container = document.createElement("div");
+			framePid.className = "framePid";
+			framePid.innerHTML = this.frames[i].page.pid;
+			container.appendChild(framePid);
+			frame.appendChild(container);
+
+			var framePage = document.createElement("span"),
+				container = document.createElement("div");
+			framePage.className = "framePage";
+			framePage.innerHTML = this.frames[i].page.number;
+			container.appendChild(framePage);
+			frame.appendChild(container);
+
 
 			if (i === lastReferencedPage.frame) {
-				div.className = "lastReferenced";
+				frame.className += " lastReferenced";
 			}
 		}
 
-		frag.appendChild(div);
+		frag.appendChild(frame);
 	}
 
 	return frag;
