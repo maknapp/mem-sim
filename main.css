@@ -25,11 +25,15 @@ body {
 
 .lastReferenced {
 	color: #000 !important;
-	background: #0F0 !important;
+	background: #00E676 !important;
+}
+
+.lastReferenced .frameNum {
+	border-right: 1px outset #00E676 !important;
 }
 
 .lastVictim {
-	background: #F00 !important;
+	background: #F44336 !important;
 	color: #000 !important;
 }
 
@@ -46,7 +50,7 @@ body {
 }
 
 .page {
-	background: #00F;
+	background: #2196F3;
 	border-radius: 3px;
 	height: 45px;
 	line-height: 45px;
@@ -75,13 +79,18 @@ body {
 
 
 .frame {
-	background: #DDD;
+	/*background: #BDBDBD;*/
 	width: 150px;
 	height: 45px;
 	position: relative;
 	text-align: center;
-	border-radius: 3px;
-	margin: 2px 0;
+	/*border-radius: 3px;*/
+	/*margin: 2px 0;*/
+	border-top: 1px solid #83A8CB;
+}
+
+.frame:first-child {
+	border-top: 0;
 }
 
 .frameNum {
@@ -89,7 +98,7 @@ body {
 	line-height: 45px;
 	left: 4px;
 	padding-right: 4px;
-	border-right: 1px outset #FFF;
+	border-right: 1px solid #83A8CB;
 	color: #333;
 }
 
