@@ -74,18 +74,11 @@ body {
 	content: "→ ";
 }
 
-
-
-
-
 .frame {
-	/*background: #BDBDBD;*/
 	width: 150px;
 	height: 45px;
 	position: relative;
 	text-align: center;
-	/*border-radius: 3px;*/
-	/*margin: 2px 0;*/
 	border-top: 1px solid #83A8CB;
 }
 
